@@ -4,9 +4,69 @@
 \title{Vault Study Sheet}    
 \usepackage[a4paper, total={8.2in, 11in}]{geometry}
 
+\newcommand{\cli}[1]{\texttt{\$ #1}}
+\newcommand{\nd}[2]{\textbf{#1}: #2\\} % new definition
+\newcommand{\sd}[2]{\indent\textbf{#1}: #2\\} % sub definition
+\newcommand{\imp}[1]{\framebox{\textbf{#1}}\\}
+\newcommand{\arr}{$\,\rightarrow\,$} % arrow right 
+\newcommand{\arl}{$\,\leftarrow\,$} % arrow left
 
 \begin{document}
 \section{Authentication Methods.}
+\textbf{Authentication} the process by which user or machine supplied information is verified against an internal or external system. Vault supports multiple auth methods including GitHub, LDAP, AppRole, and more.
+A client must authenticate against an auth method. Upon authentication, a token is generated. The token may have attached policy, which is mapped at authentication time.\\
+
+\cli{vault auth enable userpass -path=my-auth}
+
+\begin{itemize}
+  \item \textbf{AppRole}: Machine-to-machine authentication such as applications and CI/CD pipelines (Uses RoleID and SecretID; non-interactive)
+
+  \item \textbf{AWS}: Workloads running on AWS infrastructure (Authenticates via IAM identity or EC2 instance metadata)
+
+  \item \textbf{Azure}: Workloads running in Azure environments (Uses Managed Identities or Service Principals)
+
+  \item \textbf{GCP}: Workloads running on Google Cloud Platform (Uses GCP service accounts and signed JWTs)
+
+  \item \textbf{Kubernetes}: Pods authenticating to Vault from Kubernetes clusters (Uses Kubernetes service account JWTs)
+
+  \item \textbf{JWT / OIDC}: Federated identity and single sign-on (Validates signed JWTs from OIDC-compliant identity providers)
+
+  \item \textbf{LDAP}: Human authentication via enterprise directories (Username/password validated against LDAP)
+
+  \item \textbf{Userpass}: Simple human authentication without external identity systems (Credentials stored and managed in Vault)
+
+  \item \textbf{GitHub}: Developer access based on GitHub organizations or teams (OAuth-based authentication)
+
+  \item \textbf{Okta}: Enterprise single sign-on using Okta (Authenticates via Okta API tokens)
+
+  \item \textbf{RADIUS}: Legacy enterprise authentication systems (Challenge/response-based protocol)
+
+  \item \textbf{TLS Certificates}: Strong identity using mutual TLS (Client certificate verification via PKI - Useful for machines)
+
+  \item \textbf{Token}: Bootstrapping and delegated access to Vault (Direct use of pre-issued Vault tokens)
+\end{itemize}
+\nd{Identity}{A representation of a successful authentication via any auth method}
+\nd{Entity}{A single representation of many different identities}
+\nd{Alias}{Various corresponding accounts matched to a single entity}
+\nd{Identity Group}{Contains Multiple Entities, Subgroups Exist. Policies are inherited}
+\sd{Internal Group}{Default in ident store. Membership assigned manually by operators}
+\sd{External Group}{Membership managed semi-automatically. Maps to a group that is outside of the ident store. 1 and only 1 alias mapping to the outside group}
+\nd{Authentication Process}{User/Machine Supplies information/creds \arr Vault Verifies creds w/ auth method \arr Vault Generates a token and attaches policies \arr Vault returns token to user/machine}
+\begin{itemize}
+  \item \textbf{API}:  
+  Authenticate by calling the auth method login endpoint (e.g. \cli{/v1/auth/<method>/login}).  
+  On success, Vault returns a client token used in the \cli{X-Vault-Token} header for subsequent requests.
+
+  \item \textbf{CLI}:  
+  Authenticate using \cli{vault login} or a method-specific command (e.g. \cli{vault login -method=ldap}, \cli{vault login -method=oidc}).  
+  The CLI stores the returned token locally for future commands.
+
+  \item \textbf{GUI}:  
+  Authenticate via the login page by selecting an enabled auth method (e.g. LDAP, OIDC, GitHub).  
+  The browser session stores the Vault token and uses it for UI interactions.
+\end{itemize}
+\nd{Renew Lease}{Use \cli{vault token renew <token>} w/ lease token associated with identity.}
+\imp{Identities also have leases}
 \section{Vault Policies}
 \section{Vault Tokens}
 \section{Vault Leases}
