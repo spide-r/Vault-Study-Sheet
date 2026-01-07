@@ -12,6 +12,64 @@
 \newcommand{\arl}{$\,\leftarrow\,$} % arrow left
 
 \begin{document}
+\setcounter{section}{-1}
+\section{Intro to Vault}
+\begin{itemize}
+  \item \textbf{Overview}: Vault is a secrets management and data protection platform that securely stores, controls access to, and audits sensitive data.
+  \item \textbf{Dev Server}: A local, in-memory Vault instance intended for development and testing, with simplified setup and no durability guarantees. Unsealed, Single Unseal key, single v2 kv engine mounted
+  \item \textbf{Seal/Unseal}: Sealing encrypts Vault's data and stops access; unsealing decrypts it using key shares so Vault can operate. Servers start sealed.
+  \item \textbf{Why A Seal?}: Vault encrypts data using an encryption key. To protect this, it uses another encryption key (known as root key) and stores that encrypted encryption key alongside the encrypted data.
+  \item \textbf{Root Key}: Key that is encrypted with the unseal key. Stored alongside other vault data.
+  \item \textbf{Namespace API Lock}: Prevents API operations within a namespace, effectively freezing configuration and access changes. Can be done as a break-glass tool in the event of unexpected behavior. Can disable sub-paths and sub-namespaces.
+  \item \textbf{Lease, Renew, and Revoke}: Leases define the lifetime of secrets, renew extends their validity, and revoke invalidates them immediately.
+  \item \textbf{Vault Lease}: Metadata containing info such as time, key duration, renewability, etc.
+  \item \textbf{Authentication}: The process by which users or machines prove their identity to Vault using auth methods like tokens, OIDC, or cloud IAM.
+  \item \textbf{Tokens}: Credentials issued by Vault that carry policies and determine what actions a client can perform.
+  \item \textbf{Identity}: A system that maps multiple authentication methods to a single logical entity for consistent policy application.
+  \item \textbf{OIDC Provider}: Vault can act as an OpenID Connect provider, issuing identity tokens to external applications.
+  \item \textbf{Response Wrapping}: A mechanism that wraps sensitive responses in a single-use token to reduce secret exposure.
+  \item \textbf{Policies}: Declarative rules that define which paths and operations a client is authorized to access.
+  \item \textbf{Password Policies (Unrelated to above)}: Rules that enforce complexity and composition requirements for generated or stored passwords.
+  \item \textbf{Username Templating}: Dynamically generates usernames using templates when creating credentials for external systems.
+  \item \textbf{High Availability}: Allows multiple Vault nodes to run concurrently with automatic leader election and failover.
+  \item \textbf{Production hardening}: Configuration and operational practices that improve security, reliability, and resilience in production environments.
+  \begin{itemize}
+    \item Avoid Root tokens
+    \item Configure user lockout
+    \item Enable audit device logs
+    \item Disable shell command history
+    \item Keep a frequent upgrade cadence
+    \item Synchronize Clocks
+    \item Restrict Storage access
+    \item Do not use clear text credentials
+    \item Use the safest algorithms available
+    \item Follow best practices for plugins
+    \item Be aware of non-deterministic cfg file merging.
+    \item Use corrct Filesystem Permissions
+    \item Use standard input for vault secrets
+    \item Develop an off-boarding process.
+    \item Use short TTL's
+  \end{itemize}
+  \item \textbf{Storage}: The backend used by Vault to persist encrypted data, such as Consul, integrated storage, or cloud object stores.
+  \item \textbf{Cloud access management}: Using Vault to broker and manage access to cloud resources through dynamic credentials instead of Privledged-Access-Management.
+  \item \textbf{Integrated Storage}: Vault's built-in Raft-based storage backend that removes the need for an external data store.
+  \item \textbf{PGP, GnuPG, and Keybase}: Tools and formats supported by Vault for encrypting unseal keys and sensitive outputs.
+  \item \textbf{Recovery Mode}: A restricted operational mode that allows administrative recovery actions when Vault is sealed or unhealthy.
+  \item \textbf{Resource Quotas}: Limits that control how many resources (e.g., secrets, requests) can be created or consumed.
+  \item \textbf{Billing Start Date}: The date from which Vault usage is measured for licensing and billing purposes. License start date if no explicit date is configured.
+  \item \textbf{Client count}: A metric representing the number of unique clients interacting with Vault within a billing period.
+  \item \textbf{Clients and Entities}: Clients are distinct Vault consumers, while entities group multiple auth identities under one logical user or service.
+  \item \textbf{Client Count Calculation}: If no record exists, add entry. If a record exists but last active prior to current month, add new entry, if record exists and entity was last active within the current month, dont add.
+  \item \textbf{PKI certificate counts}: Vault does not deduplicate cert counts, 2 certs w/ same CN and SAN are counted as 2 separate certs. use sys/billing/certificates api endpoint
+  \item \textbf{Transform}: A feature for format-preserving encryption, tokenization, and obfuscation of sensitive data.
+  \item \textbf{Mount Migration}: The process of moving or renaming secrets engines or auth mounts without data loss.
+  \item \textbf{Duration String Format}: A human-readable syntax used to specify time intervals in Vault (ns, us, ms, s, m, h, d) (nanoseconds, microseconds, miliseconds, seconds, minutes, hours, days)
+  \item \textbf{User lockout}: A security control that temporarily blocks authentication after repeated failed login attempts. Default 5, cooldown default of 15 minutes lockout duration and lockout counter reset.
+  \item \textbf{Events (Enterprise)}: Event notifications are arbitrary, non-secret data that can be exchanged between producers (Vault and plugins) and subscribers (Vault components and external users via the API).
+  \item \textbf{Filtering (Enterprise)}: Filter expressions use matching operators and selector values to parse out important or relevant information. In some situations, you can use filter expressions to control how Vault processes results.
+  \item \textbf{Adaptive overload protection (Enterprise)}: Adaptive overload protection refers to a set of features in Vault Enterprise that prevent client requests from overwhelming different server resources leading to poor availability.
+\end{itemize}
+
 \section{Authentication Methods.}
 \textbf{Authentication} the process by which user or machine supplied information is verified against an internal or external system. Vault supports multiple auth methods including GitHub, LDAP, AppRole, and more.
 A client must authenticate against an auth method. Upon authentication, a token is generated. The token may have attached policy, which is mapped at authentication time.\\
@@ -20,29 +78,17 @@ A client must authenticate against an auth method. Upon authentication, a token 
 
 \begin{itemize}
   \item \textbf{AppRole}: Machine-to-machine authentication such as applications and CI/CD pipelines (Uses RoleID and SecretID; non-interactive)
-
   \item \textbf{AWS}: Workloads running on AWS infrastructure (Authenticates via IAM identity or EC2 instance metadata)
-
   \item \textbf{Azure}: Workloads running in Azure environments (Uses Managed Identities or Service Principals)
-
   \item \textbf{GCP}: Workloads running on Google Cloud Platform (Uses GCP service accounts and signed JWTs)
-
   \item \textbf{Kubernetes}: Pods authenticating to Vault from Kubernetes clusters (Uses Kubernetes service account JWTs)
-
   \item \textbf{JWT / OIDC}: Federated identity and single sign-on (Validates signed JWTs from OIDC-compliant identity providers)
-
   \item \textbf{LDAP}: Human authentication via enterprise directories (Username/password validated against LDAP)
-
   \item \textbf{Userpass}: Simple human authentication without external identity systems (Credentials stored and managed in Vault)
-
   \item \textbf{GitHub}: Developer access based on GitHub organizations or teams (OAuth-based authentication)
-
   \item \textbf{Okta}: Enterprise single sign-on using Okta (Authenticates via Okta API tokens)
-
   \item \textbf{RADIUS}: Legacy enterprise authentication systems (Challenge/response-based protocol)
-
   \item \textbf{TLS Certificates}: Strong identity using mutual TLS (Client certificate verification via PKI - Useful for machines)
-
   \item \textbf{Token}: Bootstrapping and delegated access to Vault (Direct use of pre-issued Vault tokens)
 \end{itemize}
 \nd{Identity}{A representation of a successful authentication via any auth method}
