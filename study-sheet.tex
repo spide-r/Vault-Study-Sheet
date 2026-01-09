@@ -1,6 +1,4 @@
 \documentclass{article}
-
-                            
 \title{Vault Study Sheet}    
 \usepackage[a4paper, total={8.2in, 11in}]{geometry}
 
@@ -114,6 +112,50 @@ A client must authenticate against an auth method. Upon authentication, a token 
 \nd{Renew Lease}{Use \cli{vault token renew <token>} w/ lease token associated with identity.}
 \imp{Identities also have leases}
 \section{Vault Policies}
+\imp{Authentication: Who are you? | Authorization: What can you do?}
+\imp{deny by default}
+\nd{Policies}{path based, provide a declarative way to grant or forbid access to certain paths and operations in Vault}
+Policy Workflow:
+\begin{itemize}
+    \item The security team configures Vault to connect and delegate authentication to an external auth method, such as LDAP.
+    \item A policy is authored in HCL to define specific access permissions for various paths within Vault.
+    \item The policy is uploaded to Vault, where its name serves as a reference or pointer to the underlying rules.
+    \item Data from the auth method, such as LDAP groups, is mapped to specific Vault policies to grant users the appropriate access.
+\end{itemize}
+Auth Workflow:
+\begin{itemize}
+    \item The user provides their LDAP username and password to Vault to initiate the authentication process.
+    \item Vault connects to the LDAP server to verify the credentials and retrieves the user's associated metadata and groups.
+    \item Vault matches the user's LDAP groups to pre-configured policies and generates a unique token with those permissions attached.
+    \item Vault returns the final token to the user, allowing them to access secrets according to their assigned policies.
+\end{itemize}
+Policy Capabilities:
+\begin{itemize}
+    \item \textbf{create} (POST/PUT): Allows the creation of a resource at the given path that does not yet exist.
+    \item \textbf{read} (GET): Allows reading the data or configuration stored at the path.
+    \item \textbf{update} (POST/PUT): Allows changing data at an existing path; in most engines, this also allows creating the initial value.
+    \item \textbf{patch} (PATCH): Allows partial updates to a resource without overwriting the entire data object.
+    \item \textbf{delete} (DELETE): Allows the removal of the resource or secret at the specified path.
+    \item \textbf{list} (LIST): Allows viewing the names (keys) of resources within a folder, but not the values themselves.
+\end{itemize}
+Special Capabilities:
+\begin{itemize}
+    \item \textbf{deny}: Explicitly forbids access to a path; this ALWAYS takes precedence over any other granted capabilities.
+    \item \textbf{sudo}: Allows access to "root-protected" paths (usually under \texttt{sys/}) that require higher privileges than standard users.
+    \item \textbf{recover}: Allows for the restoration of data from a snapshot for specific secrets engines.
+    \item \textbf{subscribe}: Allows a client to listen to events or changes occurring at the specified path.
+\end{itemize}
+Special Chars:
+\nd{Glob (*)}{\texttt{secret/data/team/*} matches any path that begins with that prefix.} \imp{This is NOT regex - only supported as the last char of the path}
+\nd{Plus (+)}{A path like \texttt{auth/+/users} matches \texttt{auth/ldap/users} and \texttt{auth/okta/users}, but it will not match \texttt{auth/ldap/admin/users}.}
+\nd{Literal Path}{A path defined as \texttt{secret/data/config} only grants access to that specific key; it provides no access to sub-paths like \texttt{secret/data/config/db}}
+\nd{The Root Path:}{An empty path or a single \texttt{/} is generally not valid for secret access; policies must specify the mount point (e.g., \texttt{secret/}) to be effective.}
+\nd{Trailing Slashes:}{Vault treats \texttt{secret/data/foo} and \texttt{secret/data/foo/} differently; the latter specifically targets the directory or listable index rather than the data object itself.}
+Commands:
+\nd{Create or Update a Policy:}{\cli{vault policy write} is used for both creating a new policy and updating an existing one. If the policy name already exists, it is overwritten with the new rules. Usage: \cli{vault policy write [options] NAME PATH}}
+\nd{Delete a Policy:}{\cli{vault policy delete} removes a policy from the system by its name. Usage: \cli{vault policy delete [options] NAME}}
+\nd{List Policies:}{\cli{vault policy list} provides a list of all policies currently configured in the Vault instance. Usage: \cli{vault policy list}}
+\nd{Read a Policy:}{\cli{vault policy read} displays the HCL or JSON contents of a specific policy. Usage: \cli{vault policy read [options] NAME}}
 \section{Vault Tokens}
 \section{Vault Leases}
 \section{Secrets Engines}
